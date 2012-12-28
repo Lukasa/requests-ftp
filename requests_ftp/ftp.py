@@ -2,6 +2,7 @@
 from requests.adapters import BaseAdapter
 import ftplib
 import base64
+from requests.compat import urlparse
 
 
 class FTPAdapter(BaseAdapter):
@@ -15,7 +16,14 @@ class FTPAdapter(BaseAdapter):
     def send(self, request, **kwargs):
         '''Sends a PreparedRequest object over FTP. Returns a response object.
         '''
-        raise NotImplementedError('Not yet implemented.')
+        # Get the authentication from the prepared request, if any.
+        auth = self.get_username_password_from_header(request)
+
+        # Establish the connection and login if needed.
+        self.conn = ftplib.FTP(request.url)
+
+        if auth is not None:
+            self.conn.login(auth[0], auth[1])
 
     def close(self):
         '''Dispose of any internal state.'''
@@ -49,6 +57,30 @@ class FTPAdapter(BaseAdapter):
         else:
             # No auth header. Return None.
             return None
+
+    def get_host_and_path_from_url(self, request):
+        '''Given a PreparedRequest object, split the URL in such a manner as to
+        determine the host and the path. This is a separate method to wrap some
+        of urlparse's craziness.'''
+        url = request.url
+        scheme, netloc, path, params, query, fragment = urlparse(url)
+
+        # urlparse is _very_ touchy about the format of a URL, which means that
+        # sometimes it assumes there is no netloc. I disagree with it, so we
+        # need to work around that.
+        if not netloc:
+            # Urlparse is wrong. Simply split the path on the first /, and
+            # treat everything before that as the netloc. Then rebuild the path
+            # by joining it with slashes.
+            components = path.split('/')
+            netloc = components[0]
+            path = '/'.join(components[1:])
+
+            # If there is a slash on the front, chuck it.
+            if path[0] == '/':
+                path = path[1:]
+
+        return (netloc, path)
 
 
 class AuthError(Exception):
