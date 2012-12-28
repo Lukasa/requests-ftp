@@ -116,7 +116,8 @@ class FTPAdapter(BaseAdapter):
 
     def close(self):
         '''Dispose of any internal state.'''
-        raise NotImplementedError('Not yet implemented.')
+        # Currently this is a no-op.
+        pass
 
     def list(self, path, request):
         '''Executes the FTP LIST command on the given path.'''
