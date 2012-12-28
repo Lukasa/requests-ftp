@@ -1,1 +1,1 @@
-from .ftp import FTPAdapter
+from .ftp import FTPAdapter, monkeypatch_session
