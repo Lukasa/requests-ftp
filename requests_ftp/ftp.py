@@ -8,7 +8,10 @@ class FTPAdapter(BaseAdapter):
         super(FTPAdapter, self).__init__()
 
     def send(self):
+        '''Sends a PreparedRequest object over FTP. Returns a response object.
+        '''
         raise NotImplementedError('Not yet implemented.')
 
     def close(self):
+        '''Dispose of any internal state.'''
         raise NotImplementedError('Not yet implemented.')
