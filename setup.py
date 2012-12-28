@@ -4,12 +4,15 @@
 import os
 import sys
 
-import requests_ftp
-
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
+
+APP_NAME = 'requests-ftp'
+VERSION = '0.1.1'
+AUTHOR = 'Cory Benfield'
+LICENSE = 'Apache 2.0'
 
 # This wrapper stolen wholesale from Requests.
 if sys.argv[-1] == 'publish':
@@ -21,11 +24,11 @@ requires = ['requests']
 settings = dict()
 
 settings.update(
-    name=requests_ftp.__title__,
-    version=requests_ftp.__version__,
+    name=APP_NAME,
+    version=VERSION,
     description='FTP Transport Adapter for Requests.',
     long_description=open('README.rst').read(),
-    author=requests_ftp.__author__,
+    author=AUTHOR,
     author_email='cory@lukasa.co.uk',
     url='http://github.com/Lukasa/requests_ftp',
     packages=['requests_ftp'],
@@ -33,7 +36,7 @@ settings.update(
     package_dir={'requests_ftp': 'requests_ftp'},
     include_package_data=True,
     install_requires=requires,
-    license=requests_ftp.__license__,
+    license=LICENSE,
     classifiers=(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
