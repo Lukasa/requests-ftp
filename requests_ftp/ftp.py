@@ -6,6 +6,32 @@ from requests.compat import urlparse, StringIO
 from requests.hooks import dispatch_hook
 from requests import Response
 from io import BytesIO
+import cgi
+import os
+
+
+def parse_multipart_files(request):
+    '''Given a prepared reqest, return a file-like object containing the
+    original data. This is pretty hacky.'''
+    # Start by grabbing the pdict.
+    _, pdict = cgi.parse_header(request.headers['Content-Type'])
+
+    # Now, wrap the multipart data in a BytesIO buffer. This is annoying.
+    buf = BytesIO()
+    buf.write(request.body)
+    buf.seek(0)
+
+    # Parse the data. Simply take the first file.
+    data = cgi.parse_multipart(buf, pdict)
+    _, filedata = data.popitem()
+    buf.close()
+
+    # Get a BytesIO now, and write the file into it.
+    buf = BytesIO()
+    buf.write(''.join(filedata))
+    buf.seek(0)
+
+    return buf
 
 
 def data_callback_factory(variable):
@@ -59,7 +85,7 @@ class FTPAdapter(BaseAdapter):
         # send the specific queries.
         self.func_table = {'LIST': self.list,
                            'RETR': self.retr,
-                           'STOR': None,
+                           'STOR': self.stor,
                            'NLST': None}
 
     def send(self, request, **kwargs):
@@ -106,6 +132,9 @@ class FTPAdapter(BaseAdapter):
         # When that call has finished executing, we'll have all our data.
         response = build_text_response(request, data)
 
+        # Close the connection.
+        self.conn.close()
+
         return response
 
     def retr(self, path, request):
@@ -119,6 +148,33 @@ class FTPAdapter(BaseAdapter):
         self.conn.retrbinary('RETR ' + path, data_callback_factory(data))
 
         response = build_binary_response(request, data)
+
+        # Close the connection.
+        self.conn.close()
+
+        return response
+
+    def stor(self, path, request):
+        '''Executes the FTP STOR command on the given path.'''
+
+        # First, get the file handle. We assume (bravely)
+        # that there is only one file to be sent to a given URL. We also
+        # assume that the filename is sent as part of the URL, not as part of
+        # the files argument. Both of these assumptions are rarely correct,
+        # but they are easy.
+        data = parse_multipart_files(request)
+
+        # Split into the path and the filename.
+        path, filename = os.path.split(path)
+
+        # Switch directories and upload the data.
+        self.conn.cwd(path)
+        self.conn.storbinary('STOR ' + filename, data)
+
+        # Close the connection and build the response.
+        self.conn.close()
+
+        response = build_binary_response(request, BytesIO())
 
         return response
 
