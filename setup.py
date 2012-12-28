@@ -10,9 +10,14 @@ except ImportError:
     from distutils.core import setup
 
 APP_NAME = 'requests-ftp'
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 AUTHOR = 'Cory Benfield'
 LICENSE = 'Apache 2.0'
+
+try:
+    LONG_DESC = open('README.rst').read()
+except IOError:
+    LONG_DESC = ''
 
 # This wrapper stolen wholesale from Requests.
 if sys.argv[-1] == 'publish':
@@ -27,7 +32,7 @@ settings.update(
     name=APP_NAME,
     version=VERSION,
     description='FTP Transport Adapter for Requests.',
-    long_description=open('README.rst').read(),
+    long_description=LONG_DESC,
     author=AUTHOR,
     author_email='cory@lukasa.co.uk',
     url='http://github.com/Lukasa/requests_ftp',
