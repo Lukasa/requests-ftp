@@ -19,8 +19,11 @@ class FTPAdapter(BaseAdapter):
         # Get the authentication from the prepared request, if any.
         auth = self.get_username_password_from_header(request)
 
+        # Next, get the host and the path.
+        host, path = self.get_host_and_path_from_url(request)
+
         # Establish the connection and login if needed.
-        self.conn = ftplib.FTP(request.url)
+        self.conn = ftplib.FTP(host)
 
         if auth is not None:
             self.conn.login(auth[0], auth[1])
