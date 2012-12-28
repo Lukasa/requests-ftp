@@ -45,17 +45,17 @@ def data_callback_factory(variable):
     return callback
 
 
-def build_text_response(request, data):
+def build_text_response(request, data, code):
     '''Build a response for textual data.'''
-    return build_response(request, data, 'ascii')
+    return build_response(request, data, code, 'ascii')
 
 
-def build_binary_response(request, data):
+def build_binary_response(request, data, code):
     '''Build a response for data whose encoding is unknown.'''
-    return build_response(request, data, None)
+    return build_response(request, data, code,  None)
 
 
-def build_response(request, data, encoding):
+def build_response(request, data, code, encoding):
     '''Builds a response object from the data returned by ftplib, using the
     specified encoding.'''
     response = Response()
@@ -66,6 +66,7 @@ def build_response(request, data, encoding):
     response.raw = data
     response.url = request.url
     response.request = request
+    response.status_code = code.split()[0]
 
     # Make sure to seek the file-like raw object back to the start.
     response.raw.seek(0)
@@ -86,7 +87,7 @@ class FTPAdapter(BaseAdapter):
         self.func_table = {'LIST': self.list,
                            'RETR': self.retr,
                            'STOR': self.stor,
-                           'NLST': None}
+                           'NLST': self.nlst}
 
     def send(self, request, **kwargs):
         '''Sends a PreparedRequest object over FTP. Returns a response object.
@@ -127,10 +128,10 @@ class FTPAdapter(BaseAdapter):
         data.release_conn = data.close
 
         self.conn.cwd(path)
-        self.conn.retrbinary('LIST', data_callback_factory(data))
+        code = self.conn.retrbinary('LIST', data_callback_factory(data))
 
         # When that call has finished executing, we'll have all our data.
-        response = build_text_response(request, data)
+        response = build_text_response(request, data, code)
 
         # Close the connection.
         self.conn.close()
@@ -145,9 +146,9 @@ class FTPAdapter(BaseAdapter):
         # method. See self.list().
         data.release_conn = data.close
 
-        self.conn.retrbinary('RETR ' + path, data_callback_factory(data))
+        code = self.conn.retrbinary('RETR ' + path, data_callback_factory(data))
 
-        response = build_binary_response(request, data)
+        response = build_binary_response(request, data, code)
 
         # Close the connection.
         self.conn.close()
@@ -169,12 +170,30 @@ class FTPAdapter(BaseAdapter):
 
         # Switch directories and upload the data.
         self.conn.cwd(path)
-        self.conn.storbinary('STOR ' + filename, data)
+        code = self.conn.storbinary('STOR ' + filename, data)
 
         # Close the connection and build the response.
         self.conn.close()
 
-        response = build_binary_response(request, BytesIO())
+        response = build_binary_response(request, BytesIO(), code)
+
+        return response
+
+    def nlst(self, path, request):
+        '''Executes the FTP NLST command on the given path.'''
+        data = StringIO()
+
+        # Alias the close method.
+        data.release_conn = data.close
+
+        self.conn.cwd(path)
+        code = self.conn.retrbinary('NLST', data_callback_factory(data))
+
+        # When that call has finished executing, we'll have all our data.
+        response = build_text_response(request, data, code)
+
+        # Close the connection.
+        self.conn.close()
 
         return response
 
