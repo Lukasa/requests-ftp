@@ -2,7 +2,50 @@
 from requests.adapters import BaseAdapter
 import ftplib
 import base64
-from requests.compat import urlparse
+from requests.compat import urlparse, StringIO
+from requests.hooks import dispatch_hook
+from requests import Response
+
+
+def data_callback_factory(variable):
+    '''Returns a callback suitable for use by the FTP library. This callback
+    will repeatedly save data into the variable provided to this function. This
+    variable should be a file-like structure.'''
+    def callback(data):
+        variable.write(data)
+        return
+
+    return callback
+
+
+def build_text_response(request, data):
+    '''Build a response for textual data.'''
+    return build_response(request, data, 'ascii')
+
+
+def build_binary_response(request, data):
+    '''Build a response for data whose encoding is unknown.'''
+    return build_response(request, data, None)
+
+
+def build_response(request, data, encoding):
+    '''Builds a response object from the data returned by ftplib, using the
+    specified encoding.'''
+    response = Response()
+
+    response.encoding = encoding
+
+    # Fill in some useful fields.
+    response.raw = data
+    response.url = request.url
+    response.request = request
+
+    # Make sure to seek the file-like raw object back to the start.
+    response.raw.seek(0)
+
+    # Run the response hook.
+    response = dispatch_hook('response', request.hooks, response)
+    return response
 
 
 class FTPAdapter(BaseAdapter):
@@ -10,8 +53,13 @@ class FTPAdapter(BaseAdapter):
     def __init__(self):
         super(FTPAdapter, self).__init__()
 
-        # Currently there's no connection pooling here, so we don't need to
-        # maintain any state.
+        # Build a dictionary keyed off the methods we support in upper case.
+        # The values of this dictionary should be the functions we use to
+        # send the specific queries.
+        self.func_table = {'LIST': self.list,
+                           'RETR': None,
+                           'STOR': None,
+                           'NLST': None}
 
     def send(self, request, **kwargs):
         '''Sends a PreparedRequest object over FTP. Returns a response object.
@@ -32,9 +80,32 @@ class FTPAdapter(BaseAdapter):
         if auth is not None:
             self.conn.login(auth[0], auth[1])
 
+        # Get the method and attempt to find the function to call.
+        resp = self.func_table[request.method](path, request)
+
+        # Return the response.
+        return resp
+
     def close(self):
         '''Dispose of any internal state.'''
         raise NotImplementedError('Not yet implemented.')
+
+    def list(self, path, request):
+        '''Executes the FTP LIST command on the given path.'''
+        data = StringIO()
+
+        # To ensure the StringIO gets cleaned up, we need to alias its close
+        # method to the release_conn() method. This is a dirty hack, but there
+        # you go.
+        data.release_conn = data.close
+
+        self.conn.cwd(path)
+        self.conn.retrbinary('LIST', data_callback_factory(data))
+
+        # When that call has finished executing, we'll have all our data.
+        response = build_text_response(request, data)
+
+        return response
 
     def get_username_password_from_header(self, request):
         '''Given a PreparedRequest object, reverse the process of adding HTTP
