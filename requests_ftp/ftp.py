@@ -20,10 +20,14 @@ class FTPAdapter(BaseAdapter):
         auth = self.get_username_password_from_header(request)
 
         # Next, get the host and the path.
-        host, path = self.get_host_and_path_from_url(request)
+        host, port, path = self.get_host_and_path_from_url(request)
+
+        # Sort out the timeout.
+        timeout = kwargs.get('timeout', None)
 
         # Establish the connection and login if needed.
-        self.conn = ftplib.FTP(host)
+        self.conn = ftplib.FTP()
+        self.conn.connect(host, port, timeout)
 
         if auth is not None:
             self.conn.login(auth[0], auth[1])
@@ -66,24 +70,18 @@ class FTPAdapter(BaseAdapter):
         determine the host and the path. This is a separate method to wrap some
         of urlparse's craziness.'''
         url = request.url
-        scheme, netloc, path, params, query, fragment = urlparse(url)
+        # scheme, netloc, path, params, query, fragment = urlparse(url)
+        parsed = urlparse(url)
+        path = parsed.path
 
-        # urlparse is _very_ touchy about the format of a URL, which means that
-        # sometimes it assumes there is no netloc. I disagree with it, so we
-        # need to work around that.
-        if not netloc:
-            # Urlparse is wrong. Simply split the path on the first /, and
-            # treat everything before that as the netloc. Then rebuild the path
-            # by joining it with slashes.
-            components = path.split('/')
-            netloc = components[0]
-            path = '/'.join(components[1:])
+        # If there is a slash on the front of the path, chuck it.
+        if path[0] == '/':
+            path = path[1:]
 
-            # If there is a slash on the front, chuck it.
-            if path[0] == '/':
-                path = path[1:]
+        host = parsed.hostname
+        port = parsed.port
 
-        return (netloc, path)
+        return (host, port, path)
 
 
 class AuthError(Exception):
