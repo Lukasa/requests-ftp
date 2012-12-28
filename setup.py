@@ -10,7 +10,7 @@ except ImportError:
     from distutils.core import setup
 
 APP_NAME = 'requests-ftp'
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 AUTHOR = 'Cory Benfield'
 LICENSE = 'Apache 2.0'
 
@@ -32,7 +32,7 @@ settings.update(
     author_email='cory@lukasa.co.uk',
     url='http://github.com/Lukasa/requests_ftp',
     packages=['requests_ftp'],
-    package_data={'': ['LICENSE', 'AUTHORS']},
+    package_data={'': ['LICENSE', 'AUTHORS', 'README.rst']},
     package_dir={'requests_ftp': 'requests_ftp'},
     include_package_data=True,
     install_requires=requires,
