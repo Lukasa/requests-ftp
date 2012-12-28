@@ -5,6 +5,7 @@ import base64
 from requests.compat import urlparse, StringIO
 from requests.hooks import dispatch_hook
 from requests import Response
+from io import BytesIO
 
 
 def data_callback_factory(variable):
@@ -57,7 +58,7 @@ class FTPAdapter(BaseAdapter):
         # The values of this dictionary should be the functions we use to
         # send the specific queries.
         self.func_table = {'LIST': self.list,
-                           'RETR': None,
+                           'RETR': self.retr,
                            'STOR': None,
                            'NLST': None}
 
@@ -104,6 +105,20 @@ class FTPAdapter(BaseAdapter):
 
         # When that call has finished executing, we'll have all our data.
         response = build_text_response(request, data)
+
+        return response
+
+    def retr(self, path, request):
+        '''Executes the FTP RETR command on the given path.'''
+        data = BytesIO()
+
+        # To ensure the BytesIO gets cleaned up, we need to alias its close
+        # method. See self.list().
+        data.release_conn = data.close
+
+        self.conn.retrbinary('RETR ' + path, data_callback_factory(data))
+
+        response = build_binary_response(request, data)
 
         return response
 
