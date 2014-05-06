@@ -286,7 +286,7 @@ class FTPAdapter(BaseAdapter):
             path = path[1:]
 
         host = parsed.hostname
-        port = parsed.port
+        port = parsed.port or 0
 
         return (host, port, path)
 
