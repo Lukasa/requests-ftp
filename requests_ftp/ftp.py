@@ -25,6 +25,11 @@ def monkeypatch_session():
         content field contains the binary data.'''
         return self.request('RETR', url, **kwargs)
 
+    def get_helper(self, url, **kwargs):
+        '''Sends an FTP RETR for a given url. Returns a Response object whose
+        content field contains the binary data.'''
+        return self.request('GET', url, **kwargs)
+
     def stor_helper(self, url, files=None, **kwargs):
         '''Sends an FTP STOR to a given URL. Returns a Response object. Expects
         to be given one file by the standard Requests method. The remote
@@ -35,11 +40,14 @@ def monkeypatch_session():
         '''Sends an FTP NLST. Returns a Response object.'''
         return self.request('NLST', url, **kwargs)
 
+
+
     # Patch them on.
     Session.list = list_helper
     Session.retr = retr_helper
     Session.stor = stor_helper
     Session.nlst = nlst_helper
+    Session.get = get_helper
 
     # Create a new initialiser. This one just has to make sure that we mount
     # an FTP Adapter to each new session.
@@ -132,7 +140,8 @@ class FTPAdapter(BaseAdapter):
         self.func_table = {'LIST': self.list,
                            'RETR': self.retr,
                            'STOR': self.stor,
-                           'NLST': self.nlst}
+                           'NLST': self.nlst,
+                           'GET': self.retr,}
 
     def send(self, request, **kwargs):
         '''Sends a PreparedRequest object over FTP. Returns a response object.
