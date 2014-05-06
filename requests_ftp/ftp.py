@@ -201,6 +201,7 @@ class FTPAdapter(BaseAdapter):
         # method. See self.list().
         data.release_conn = data.close
 
+        self.conn.login()
         code = self.conn.retrbinary('RETR ' + path, data_callback_factory(data))
 
         response = build_binary_response(request, data, code)
