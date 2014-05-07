@@ -13,7 +13,7 @@ For full documentation, please see the Github repository.
 """
 
 __title__ = 'requests-ftp'
-__version__ = '0.1.3'
+__version__ = '0.2.0'
 __author__ = 'Cory Benfield'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2012 Cory Benfield'
