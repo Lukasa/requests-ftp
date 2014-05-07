@@ -132,7 +132,8 @@ class FTPAdapter(BaseAdapter):
         self.func_table = {'LIST': self.list,
                            'RETR': self.retr,
                            'STOR': self.stor,
-                           'NLST': self.nlst}
+                           'NLST': self.nlst,
+                           'GET': self.retr,}
 
     def send(self, request, **kwargs):
         '''Sends a PreparedRequest object over FTP. Returns a response object.
@@ -152,6 +153,8 @@ class FTPAdapter(BaseAdapter):
 
         if auth is not None:
             self.conn.login(auth[0], auth[1])
+        else:
+            self.conn.login()
 
         # Get the method and attempt to find the function to call.
         resp = self.func_table[request.method](path, request)
