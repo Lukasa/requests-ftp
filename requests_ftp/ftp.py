@@ -285,7 +285,7 @@ class FTPAdapter(BaseAdapter):
         path = parsed.path
 
         # If there is a slash on the front of the path, chuck it.
-        if path[0] == '/':
+        if path.startswith('/'):
             path = path[1:]
 
         host = parsed.hostname
