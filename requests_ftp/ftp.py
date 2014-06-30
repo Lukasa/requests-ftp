@@ -35,11 +35,16 @@ def monkeypatch_session():
         '''Sends an FTP NLST. Returns a Response object.'''
         return self.request('NLST', url, **kwargs)
 
+    def size_helper(self, url, **kwargs):
+        '''Sends an FTP SIZE. Returns a decimal number.'''
+        return self.request('SIZE', url, **kwargs)
+
     # Patch them on.
     Session.list = list_helper
     Session.retr = retr_helper
     Session.stor = stor_helper
     Session.nlst = nlst_helper
+    Session.size = size_helper
 
     # Create a new initialiser. This one just has to make sure that we mount
     # an FTP Adapter to each new session.
@@ -133,6 +138,7 @@ class FTPAdapter(BaseAdapter):
                            'RETR': self.retr,
                            'STOR': self.stor,
                            'NLST': self.nlst,
+                           'SIZE': self.size,
                            'GET': self.retr,}
 
     def send(self, request, **kwargs):
@@ -200,6 +206,28 @@ class FTPAdapter(BaseAdapter):
         response = build_binary_response(request, data, code)
 
         # Close the connection.
+        self.conn.close()
+
+        return response
+
+    def size(self, path, request):
+        '''Executes the FTP SIZE command on the given path.'''
+        self.conn.voidcmd('TYPE I')  # SIZE is not usually allowed in ASCII mode
+
+        size = self.conn.size(path)
+
+        if not str(size).isdigit():
+            self.conn.close()
+            return None
+
+        data = StringIO(size)
+        # To ensure the StringIO gets cleaned up, we need to alias its close
+        # method to the release_conn() method. This is a dirty hack, but there
+        # you go.
+        data.release_conn = data.close
+
+        response = build_text_response(request, data, '213')
+
         self.conn.close()
 
         return response
