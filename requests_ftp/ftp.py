@@ -4,10 +4,14 @@ import ftplib
 import base64
 from requests.compat import urlparse, StringIO
 from requests.hooks import dispatch_hook
-from requests import Response
+from requests import Response, codes
 from io import BytesIO
 import cgi
 import os
+import socket
+
+from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
+from requests.exceptions import RequestException
 
 class FTPSession(requests.Session):
     def __init__(self):
@@ -142,15 +146,46 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
         # Establish the connection and login if needed.
         self.conn = ftplib.FTP()
-        self.conn.connect(host, port, timeout)
 
-        if auth is not None:
-            self.conn.login(auth[0], auth[1])
-        else:
-            self.conn.login()
+        # Use a flag to distinguish read vs connection timeouts, and a flat set
+        # of except blocks instead of a nested try-except, because python 3
+        # exception chaining makes things weird
+        connected = False
 
-        # Get the method and attempt to find the function to call.
-        resp = self.func_table[request.method](path, request)
+        try:
+            self.conn.connect(host, port, timeout)
+            connected = True
+
+            if auth is not None:
+                self.conn.login(auth[0], auth[1])
+            else:
+                self.conn.login()
+
+            # Get the method and attempt to find the function to call.
+            resp = self.func_table[request.method](path, request)
+        except socket.timeout as e:
+            # requests distinguishes between connection timeouts and others
+            if connected:
+                raise ReadTimeout(e, request=request)
+            else:
+                raise ConnectTimeout(e, request=request)
+        # ftplib raises EOFError if the connection is unexpectedly closed.
+        # Convert that or any other socket error to a ConnectionError.
+        except (EOFError, socket.error) as e:
+            raise ConnectionError(e, request=request)
+        # Raised for 5xx errors. FTP uses 550 for both ENOENT and EPERM type
+        # errors, so just translate all of these into a http-ish 404
+        except ftplib.error_perm as e:
+            resp = build_text_response(request, StringIO(str(e)), str(codes.not_found))
+        # 4xx reply, translate to a http 503
+        except ftplib.error_temp as e:
+            resp = build_text_response(request, StringIO(str(e)), str(codes.unavailable))
+        # error_reply is an unexpected status code, and error_proto is an
+        # invalid status code. Error is the generic ftplib error, usually
+        # raised when a line is too long. Translate all of them to a generic
+        # RequestException
+        except (ftplib.error_reply, ftplib.error_proto, ftplib.Error) as e:
+            raise RequestException(e, request=request)
 
         # Return the response.
         return resp
