@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-from requests.adapters import BaseAdapter
+import requests
 import ftplib
 import base64
 from requests.compat import urlparse, StringIO
@@ -8,55 +8,42 @@ from requests import Response
 from io import BytesIO
 import cgi
 import os
-from requests import Session
+
+class FTPSession(requests.Session):
+    def __init__(self):
+        super(FTPSession, self).__init__()
+        self.mount('ftp://', FTPAdapter())
+
+    # Define our helper methods.
+    def list(self, url, **kwargs):
+        '''Sends an FTP LIST. Returns a Response object.'''
+        return self.request('LIST', url, **kwargs)
+
+    def retr(self, url, **kwargs):
+        '''Sends an FTP RETR for a given url. Returns a Response object whose
+        content field contains the binary data.'''
+        return self.request('RETR', url, **kwargs)
+
+    def stor(self, url, files=None, **kwargs):
+        '''Sends an FTP STOR to a given URL. Returns a Response object. Expects
+        to be given one file by the standard Requests method. The remote
+        filename will be given by the URL provided.'''
+        return self.request('STOR', url, files=files, **kwargs)
+
+    def nlst(self, url, **kwargs):
+        '''Sends an FTP NLST. Returns a Response object.'''
+        return self.request('NLST', url, **kwargs)
+
+    def size(self, url, **kwargs):
+        '''Sends an FTP SIZE. Returns a decimal number.'''
+        return self.request('SIZE', url, **kwargs)
 
 
 def monkeypatch_session():
     '''Monkeypatch Requests Sessions to provide all the helper
     methods needed for use with FTP.'''
 
-    # Define our helper methods.
-    def list_helper(self, url, **kwargs):
-        '''Sends an FTP LIST. Returns a Response object.'''
-        return self.request('LIST', url, **kwargs)
-
-    def retr_helper(self, url, **kwargs):
-        '''Sends an FTP RETR for a given url. Returns a Response object whose
-        content field contains the binary data.'''
-        return self.request('RETR', url, **kwargs)
-
-    def stor_helper(self, url, files=None, **kwargs):
-        '''Sends an FTP STOR to a given URL. Returns a Response object. Expects
-        to be given one file by the standard Requests method. The remote
-        filename will be given by the URL provided.'''
-        return self.request('STOR', url, files=files, **kwargs)
-
-    def nlst_helper(self, url, **kwargs):
-        '''Sends an FTP NLST. Returns a Response object.'''
-        return self.request('NLST', url, **kwargs)
-
-    def size_helper(self, url, **kwargs):
-        '''Sends an FTP SIZE. Returns a decimal number.'''
-        return self.request('SIZE', url, **kwargs)
-
-    # Patch them on.
-    Session.list = list_helper
-    Session.retr = retr_helper
-    Session.stor = stor_helper
-    Session.nlst = nlst_helper
-    Session.size = size_helper
-
-    # Create a new initialiser. This one just has to make sure that we mount
-    # an FTP Adapter to each new session.
-    def new_init(self):
-        self.old_init()
-
-        self.mount('ftp://', FTPAdapter())
-
-    # Move the old initializer and store the new one in its place.
-    Session.old_init = Session.__init__
-    Session.__init__ = new_init
-
+    requests.Session = FTPSession
     return
 
 
@@ -126,7 +113,7 @@ def build_response(request, data, code, encoding):
     return response
 
 
-class FTPAdapter(BaseAdapter):
+class FTPAdapter(requests.adapters.BaseAdapter):
     '''A Requests Transport Adapter that handles FTP urls.'''
     def __init__(self):
         super(FTPAdapter, self).__init__()
