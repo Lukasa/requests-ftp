@@ -3,6 +3,7 @@ import threading
 import requests
 import requests_ftp
 from simple_ftpd import SimpleFTPServer
+from simple_proxy import ProxyServer
 
 def pytest_configure(config):
     requests_ftp.monkeypatch_session()
@@ -19,4 +20,13 @@ def ftpd():
 @pytest.fixture
 def session():
     return requests.Session()
+
+@pytest.fixture(scope='session')
+def proxy():
+    proxy_server = ProxyServer()
+    proxy_server_thread = threading.Thread(target=proxy_server.serve_forever)
+    proxy_server_thread.daemon = True
+    proxy_server_thread.start()
+
+    return proxy_server
 
