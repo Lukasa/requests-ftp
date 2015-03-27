@@ -137,6 +137,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
                            'STOR': self.stor,
                            'NLST': self.nlst,
                            'SIZE': self.size,
+                           'HEAD': self.size,
                            'GET': self.retr,}
 
     def send(self, request, **kwargs):
