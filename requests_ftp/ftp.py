@@ -81,6 +81,11 @@ def data_callback_factory(variable):
     variable should be a file-like structure.'''
     def callback(data):
         variable.write(data)
+        if hasattr(variable, "content_len"):
+            variable.content_len += len(data)
+        else:
+            variable.content_len = len(data)
+
         return
 
     return callback
@@ -108,6 +113,8 @@ def build_response(request, data, code, encoding):
     response.url = request.url
     response.request = request
     response.status_code = int(code.split()[0])
+    if hasattr(data, "content_len"):
+        response.headers['Content-Length'] = str(data.content_len)
 
     # Make sure to seek the file-like raw object back to the start.
     response.raw.seek(0)
@@ -247,6 +254,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         # method to the release_conn() method. This is a dirty hack, but there
         # you go.
         data.release_conn = data.close
+        data.content_len = size
 
         response = build_text_response(request, data, '213')
 
