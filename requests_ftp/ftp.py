@@ -137,8 +137,8 @@ class FTPAdapter(requests.adapters.BaseAdapter):
                            'STOR': self.stor,
                            'NLST': self.nlst,
                            'SIZE': self.size,
-                           'HEAD': self.size,
-                           'GET': self.retr,}
+                           'HEAD': self.head,
+                           'GET': self.get,}
 
     def send(self, request, **kwargs):
         '''Sends a PreparedRequest object over FTP. Returns a response object.
@@ -240,6 +240,20 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
         return response
 
+    def get(self, path, request):
+        '''Executes the FTP RETR command on the given path.
+
+           This is the same as retr except that the FTP server code is
+           converted to a HTTP 200.
+        '''
+
+        response = self.retr(path, request)
+
+        # Errors are handled in send(), so assume everything is ok if we
+        # made it this far
+        response.status_code = codes.ok
+        return response
+
     def size(self, path, request):
         '''Executes the FTP SIZE command on the given path.'''
         self.conn.voidcmd('TYPE I')  # SIZE is not usually allowed in ASCII mode
@@ -261,6 +275,17 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
         self.conn.close()
 
+        return response
+
+    def head(self, path, request):
+        '''Executes the FTP SIZE command on the given path.
+
+           This is the same as size except that the FTP server code is
+           converted to a HTTP 200.
+        '''
+
+        response = self.size(path, request)
+        response.status_code = codes.ok
         return response
 
     def stor(self, path, request):
