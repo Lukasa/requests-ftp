@@ -2,7 +2,7 @@
 import requests
 import ftplib
 import base64
-from requests.compat import urlparse, StringIO
+from requests.compat import urlparse
 from requests.hooks import dispatch_hook
 from requests import Response, codes
 from io import BytesIO
@@ -184,10 +184,15 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         # Raised for 5xx errors. FTP uses 550 for both ENOENT and EPERM type
         # errors, so just translate all of these into a http-ish 404
         except ftplib.error_perm as e:
-            resp = build_text_response(request, StringIO(str(e)), str(codes.not_found))
+            # The exception message is probably from the server, so if it's
+            # non-ascii, who knows what the encoding is. Latin1 has the
+            # advantage of not being able to fail.
+            resp = build_text_response(request,
+                    BytesIO(str(e).encode('latin1')), str(codes.not_found))
         # 4xx reply, translate to a http 503
         except ftplib.error_temp as e:
-            resp = build_text_response(request, StringIO(str(e)), str(codes.unavailable))
+            resp = build_text_response(request,
+                    BytesIO(str(e).encode('latin1')), str(codes.unavailable))
         # error_reply is an unexpected status code, and error_proto is an
         # invalid status code. Error is the generic ftplib error, usually
         # raised when a line is too long. Translate all of them to a generic
@@ -264,8 +269,8 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             self.conn.close()
             return None
 
-        data = StringIO(size)
-        # To ensure the StringIO gets cleaned up, we need to alias its close
+        data = BytesIO(bytes(size))
+        # To ensure the BytesIO gets cleaned up, we need to alias its close
         # method to the release_conn() method. This is a dirty hack, but there
         # you go.
         data.release_conn = data.close
@@ -314,7 +319,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
     def nlst(self, path, request):
         '''Executes the FTP NLST command on the given path.'''
-        data = StringIO()
+        data = BytesIO()
 
         # Alias the close method.
         data.release_conn = data.close
@@ -348,6 +353,11 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
             # Decode the base64 encoded string.
             decoded = base64.b64decode(encoded)
+
+            # The auth string was encoded to bytes by requests using latin1,
+            # and will be encoded to bytes by ftplib (in python 3) using
+            # latin1. In the meantime, use a str
+            decoded = decoded.decode('latin1')
 
             # The string is of the form 'username:password'. Split on the
             # colon.
