@@ -12,6 +12,7 @@ import socket
 
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from requests.exceptions import RequestException
+from requests.utils import prepend_scheme_if_needed
 
 class FTPSession(requests.Session):
     def __init__(self):
@@ -147,10 +148,18 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         auth = self.get_username_password_from_header(request)
 
         # Next, get the host and the path.
-        host, port, path = self.get_host_and_path_from_url(request)
+        scheme, host, port, path = self.get_host_and_path_from_url(request)
 
         # Sort out the timeout.
         timeout = kwargs.get('timeout', None)
+
+        # Look for a proxy
+        proxies = kwargs.get('proxies', {})
+        proxy = proxies.get(scheme)
+
+        # If there is a proxy, then we actually want to make a HTTP request
+        if proxy:
+            return self.send_proxy(request, proxy, **kwargs)
 
         # Establish the connection and login if needed.
         self.conn = ftplib.FTP()
@@ -207,6 +216,18 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         '''Dispose of any internal state.'''
         # Currently this is a no-op.
         pass
+
+    def send_proxy(self, request, proxy, **kwargs):
+        '''Send a FTP request through a HTTP proxy'''
+        # Direct the request through a HTTP adapter instead
+        proxy_url = prepend_scheme_if_needed(proxy, 'http')
+        s = requests.Session()
+        adapter = s.get_adapter(proxy_url)
+
+        try:
+            return adapter.send(request, **kwargs)
+        finally:
+            adapter.close()
 
     def list(self, path, request):
         '''Executes the FTP LIST command on the given path.'''
@@ -376,6 +397,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         url = request.url
         # scheme, netloc, path, params, query, fragment = urlparse(url)
         parsed = urlparse(url)
+        scheme = parsed.scheme
         path = parsed.path
 
         # If there is a slash on the front of the path, chuck it.
@@ -385,7 +407,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         host = parsed.hostname
         port = parsed.port or 0
 
-        return (host, port, path)
+        return (scheme, host, port, path)
 
 
 class AuthError(Exception):
