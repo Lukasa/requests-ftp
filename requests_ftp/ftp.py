@@ -231,11 +231,11 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
     def list(self, path, request):
         '''Executes the FTP LIST command on the given path.'''
-        data = StringIO()
+        data = BytesIO()
 
-        # To ensure the StringIO gets cleaned up, we need to alias its close
-        # method to the release_conn() method. This is a dirty hack, but there
-        # you go.
+        # To ensure the BytesIO object gets cleaned up, we need to alias its
+        # close method to the release_conn() method. This is a dirty hack, but
+        # there you go.
         data.release_conn = data.close
 
         self.conn.cwd(path)
