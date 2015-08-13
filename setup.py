@@ -10,7 +10,7 @@ except ImportError:
     from distutils.core import setup
 
 APP_NAME = 'requests-ftp'
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 AUTHOR = 'Cory Benfield'
 LICENSE = 'Apache 2.0'
 
