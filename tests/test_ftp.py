@@ -69,8 +69,8 @@ def test_head(ftpd, session):
 def test_connection_refused(session):
     # Create and bind a socket but do not listen to ensure we have a port
     # that will refuse connections
-    def target(s):
-        pass
+    def target(s, goevent):
+        goevent.set()
 
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.ConnectionError):
@@ -79,8 +79,9 @@ def test_connection_refused(session):
 
 def test_connection_timeout(session):
     # Create, bind, and listen on a socket, but never accept
-    def target(s):
+    def target(s, goevent):
         s.listen(1)
+        goevent.set()
 
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.ConnectTimeout):
@@ -90,8 +91,9 @@ def test_connection_timeout(session):
 def test_login_timeout(session):
     # Create and accept a socket, but stop responding after sending
     # the welcome
-    def target(s, event):
+    def target(s, goevent, event):
         s.listen(1)
+        goevent.set()
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'220 welcome\r\n')
@@ -108,8 +110,9 @@ def test_login_timeout(session):
 
 def test_connection_close(session):
     # Create and accept a socket, then close it after the welcome
-    def target(s):
+    def target(s, goevent):
         s.listen(1)
+        goevent.set()
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'220 welcome\r\n')
@@ -123,8 +126,9 @@ def test_connection_close(session):
 
 def test_invalid_response(session):
     # Send an invalid welcome
-    def target(s):
+    def target(s, goevent):
         s.listen(1)
+        goevent.set()
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'no code\r\n')
@@ -138,8 +142,9 @@ def test_invalid_response(session):
 
 def test_invalid_code(session):
     # Send a welcome, then reply with something weird to the USER command
-    def target(s):
+    def target(s, goevent):
         s.listen(1)
+        goevent.set()
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'220 welcome\r\n')
@@ -154,8 +159,9 @@ def test_invalid_code(session):
 
 
 def test_unavailable(session):
-    def target(s):
+    def target(s, goevent):
         s.listen(1)
+        goevent.set()
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'421 go away\r\n')

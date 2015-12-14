@@ -29,20 +29,23 @@ def socketServer(target, event=None):
         Returns the TCP port the server is running on.
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    goevent = threading.Event()
 
     try:
         s.bind(('', 0))
         port = s.getsockname()[1]
 
         if event:
-            args = (s, event)
+            args = (s, goevent, event)
         else:
-            args = (s,)
+            args = (s, goevent)
 
         exn_list = []
         server_thread = TestThread(exn_list, target=target, args=args)
         server_thread.daemon = True
         server_thread.start()
+
+        goevent.wait(5)
 
         yield port
 

@@ -49,8 +49,8 @@ def test_proxy_get(ftpd, proxy, session):
 def test_proxy_connection_refused(ftpd, session):
     # Create and bind a socket but do not listen to ensure we have a port
     # that will refuse connections
-    def target(s):
-        pass
+    def target(s, goevent):
+        goevent.set()
 
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.ConnectionError):
@@ -60,8 +60,9 @@ def test_proxy_connection_refused(ftpd, session):
 
 def test_proxy_read_timeout(ftpd, session):
     # Create and accept a socket, but never respond
-    def target(s, event):
+    def target(s, goevent, event):
         s.listen(1)
+        goevent.set()
         (clientsock, _addr) = s.accept()
         try:
             event.wait(5)
@@ -77,8 +78,9 @@ def test_proxy_read_timeout(ftpd, session):
 
 def test_proxy_connection_close(ftpd, session):
     # Create and accept a socket, then close it
-    def target(s):
+    def target(s, goevent):
         s.listen(1)
+        goevent.set()
         (clientsock, _addr) = s.accept()
         clientsock.close()
 
