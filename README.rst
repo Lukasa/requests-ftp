@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/Lukasa/requests-ftp.svg?branch=master
+    :target: https://travis-ci.org/Lukasa/requests-ftp
+
 Requests-FTP
 ============
 
