@@ -10,6 +10,7 @@ from threadmgr import socketServer
 
 import pytest
 
+
 @contextlib.contextmanager
 def _prepareTestData(dir):
     """ Writes data to the given directory and returns a tuple of (tempname, testdata) """
@@ -21,6 +22,7 @@ def _prepareTestData(dir):
         f.flush()
 
         yield (os.path.basename(f.name), testdata)
+
 
 def test_basic_get(ftpd, session):
     # Create a file in the anonymous root and fetch it
@@ -35,10 +37,12 @@ def test_basic_get(ftpd, session):
         # Check the contents
         assert response.content == testdata
 
+
 def test_missing_get(ftpd, session):
     # Fetch a file that does not exist, look for a 404
     response = session.get("ftp://127.0.0.1:%d/no/such/path" % ftpd.ftp_port)
     assert response.status_code == requests.codes.not_found
+
 
 def test_authenticated_get(ftpd, session):
     # Create a file in the testuser's root and fetch it
@@ -52,6 +56,7 @@ def test_authenticated_get(ftpd, session):
         # Check the contents
         assert response.content == testdata
 
+
 def test_head(ftpd, session):
     # Perform a HEAD over an anonymous connection
     with _prepareTestData(dir=ftpd.anon_root) as (testfile, testdata):
@@ -59,6 +64,7 @@ def test_head(ftpd, session):
 
         assert response.status_code == requests.codes.ok
         assert response.headers['Content-Length'] == str(len(testdata))
+
 
 def test_connection_refused(session):
     # Create and bind a socket but do not listen to ensure we have a port
@@ -70,6 +76,7 @@ def test_connection_refused(session):
         with pytest.raises(requests.exceptions.ConnectionError):
             session.get('ftp://127.0.0.1:%d/' % port)
 
+
 def test_connection_timeout(session):
     # Create, bind, and listen on a socket, but never accept
     def target(s):
@@ -78,6 +85,7 @@ def test_connection_timeout(session):
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.ConnectTimeout):
             session.get('ftp://127.0.0.1:%d/' % port, timeout=1)
+
 
 def test_login_timeout(session):
     # Create and accept a socket, but stop responding after sending
@@ -97,6 +105,7 @@ def test_login_timeout(session):
         with pytest.raises(requests.exceptions.ReadTimeout):
             session.get('ftp://127.0.0.1:%d/' % port, timeout=1)
 
+
 def test_connection_close(session):
     # Create and accept a socket, then close it after the welcome
     def target(s):
@@ -111,6 +120,7 @@ def test_connection_close(session):
         with pytest.raises(requests.exceptions.ConnectionError):
             session.get('ftp://127.0.0.1:%d/' % port)
 
+
 def test_invalid_response(session):
     # Send an invalid welcome
     def target(s):
@@ -124,6 +134,7 @@ def test_invalid_response(session):
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.RequestException):
             session.get('ftp://127.0.0.1:%d/' % port)
+
 
 def test_invalid_code(session):
     # Send a welcome, then reply with something weird to the USER command
@@ -140,6 +151,7 @@ def test_invalid_code(session):
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.RequestException):
             session.get('ftp://127.0.0.1:%d/' % port)
+
 
 def test_unavailable(session):
     def target(s):

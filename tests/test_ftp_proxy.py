@@ -14,6 +14,7 @@ import requests_ftp
 
 from threadmgr import socketServer
 
+
 @contextlib.contextmanager
 def _prepareTestData(dir):
     """ Writes data to the given directory and returns a tuple of (tempname, testdata) """
@@ -25,6 +26,7 @@ def _prepareTestData(dir):
         f.flush()
 
         yield (os.path.basename(f.name), testdata)
+
 
 def test_proxy_get(ftpd, proxy, session):
     # Create a file in the anonymous root and fetch it through a proxy
@@ -43,6 +45,7 @@ def test_proxy_get(ftpd, proxy, session):
         # Check that it went through the proxy
         assert testurl in proxy.requests
 
+
 def test_proxy_connection_refused(ftpd, session):
     # Create and bind a socket but do not listen to ensure we have a port
     # that will refuse connections
@@ -53,6 +56,7 @@ def test_proxy_connection_refused(ftpd, session):
         with pytest.raises(requests.exceptions.ConnectionError):
             session.get('ftp://127.0.0.1:%d/' % ftpd.ftp_port,
                     proxies={'ftp': 'localhost:%d' % port})
+
 
 def test_proxy_read_timeout(ftpd, session):
     # Create and accept a socket, but never respond
@@ -69,6 +73,7 @@ def test_proxy_read_timeout(ftpd, session):
         with pytest.raises(requests.exceptions.ReadTimeout):
             session.get('ftp://127.0.0.1:%d' % ftpd.ftp_port,
                     proxies={'ftp': 'localhost:%d' % port}, timeout=1)
+
 
 def test_proxy_connection_close(ftpd, session):
     # Create and accept a socket, then close it
