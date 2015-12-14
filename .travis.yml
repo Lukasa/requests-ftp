@@ -1,0 +1,15 @@
+language: python
+
+python:
+  - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - pypy
+
+sudo: false
+install:
+  - "pip install -U pip setuptools"
+  - "pip install ."
+  - "pip install -r test_requirements.txt"
+script: "py.test test/"
