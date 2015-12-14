@@ -80,7 +80,7 @@ def test_connection_refused(session):
 def test_connection_timeout(session):
     # Create, bind, and listen on a socket, but never accept
     def target(s):
-        s.listen(0)
+        s.listen(1)
 
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.ConnectTimeout):
@@ -91,7 +91,7 @@ def test_login_timeout(session):
     # Create and accept a socket, but stop responding after sending
     # the welcome
     def target(s, event):
-        s.listen(0)
+        s.listen(1)
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'220 welcome\r\n')
@@ -109,7 +109,7 @@ def test_login_timeout(session):
 def test_connection_close(session):
     # Create and accept a socket, then close it after the welcome
     def target(s):
-        s.listen(0)
+        s.listen(1)
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'220 welcome\r\n')
@@ -124,7 +124,7 @@ def test_connection_close(session):
 def test_invalid_response(session):
     # Send an invalid welcome
     def target(s):
-        s.listen(0)
+        s.listen(1)
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'no code\r\n')
@@ -139,7 +139,7 @@ def test_invalid_response(session):
 def test_invalid_code(session):
     # Send a welcome, then reply with something weird to the USER command
     def target(s):
-        s.listen(0)
+        s.listen(1)
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'220 welcome\r\n')
@@ -155,7 +155,7 @@ def test_invalid_code(session):
 
 def test_unavailable(session):
     def target(s):
-        s.listen(0)
+        s.listen(1)
         (clientsock, _addr) = s.accept()
         try:
             clientsock.send(b'421 go away\r\n')

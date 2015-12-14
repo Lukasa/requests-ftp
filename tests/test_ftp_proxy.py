@@ -61,7 +61,7 @@ def test_proxy_connection_refused(ftpd, session):
 def test_proxy_read_timeout(ftpd, session):
     # Create and accept a socket, but never respond
     def target(s, event):
-        s.listen(0)
+        s.listen(1)
         (clientsock, _addr) = s.accept()
         try:
             event.wait(5)
@@ -78,7 +78,7 @@ def test_proxy_read_timeout(ftpd, session):
 def test_proxy_connection_close(ftpd, session):
     # Create and accept a socket, then close it
     def target(s):
-        s.listen(0)
+        s.listen(1)
         (clientsock, _addr) = s.accept()
         clientsock.close()
 
