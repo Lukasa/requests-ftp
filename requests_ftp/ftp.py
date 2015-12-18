@@ -100,7 +100,7 @@ def build_text_response(request, data, code):
 
 def build_binary_response(request, data, code):
     '''Build a response for data whose encoding is unknown.'''
-    return build_response(request, data, code,  None)
+    return build_response(request, data, code, None)
 
 
 def build_response(request, data, code, encoding):
@@ -114,7 +114,8 @@ def build_response(request, data, code, encoding):
     response.raw = data
     response.url = request.url
     response.request = request
-    response.status_code = int(code.split()[0])
+    last_valid_line_from_code = [line for line in code.split('\n') if line][-1]
+    response.status_code = int(last_valid_line_from_code.split()[0])
     if hasattr(data, "content_len"):
         response.headers['Content-Length'] = str(data.content_len)
 
