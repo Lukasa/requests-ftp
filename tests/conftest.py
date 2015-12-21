@@ -1,12 +1,15 @@
+# -*- encoding: utf-8 -*-
 import pytest
-import threading
 import requests
 import requests_ftp
 from simple_ftpd import SimpleFTPServer
 from simple_proxy import ProxyServer
+import threading
+
 
 def pytest_configure(config):
     requests_ftp.monkeypatch_session()
+
 
 @pytest.fixture(scope='session')
 def ftpd():
@@ -17,9 +20,11 @@ def ftpd():
 
     return ftp_server
 
+
 @pytest.fixture
 def session():
     return requests.Session()
+
 
 @pytest.fixture(scope='session')
 def proxy():
@@ -29,4 +34,3 @@ def proxy():
     proxy_server_thread.start()
 
     return proxy_server
-

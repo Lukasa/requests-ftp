@@ -1,17 +1,19 @@
+# -*- encoding: utf-8 -*-
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import FTPServer
 
+import shutil
 import socket
 import tempfile
-import shutil
-import threading
+
 
 class SimpleFTPServer(FTPServer):
     """Starts a simple FTP server on a random free port. """
 
-    ftp_user = property(lambda s: 'fakeusername',
-            doc='User name added for authenticated connections')
+    ftp_user = property(
+        lambda s: 'fakeusername',
+        doc='User name added for authenticated connections')
     ftp_password = property(lambda s: 'qweqwe', doc='Password for ftp_user')
 
     # Set in __init__

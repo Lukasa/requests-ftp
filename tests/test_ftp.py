@@ -1,14 +1,14 @@
-import threading
-import os
+# -*- encoding: utf-8 -*-
+import pytest
+
 import contextlib
+import os
 import tempfile
+import threading
 
 import requests
-import requests_ftp
 
 from threadmgr import socketServer
-
-import pytest
 
 
 @contextlib.contextmanager
@@ -47,8 +47,9 @@ def test_missing_get(ftpd, session):
 def test_authenticated_get(ftpd, session):
     # Create a file in the testuser's root and fetch it
     with _prepareTestData(dir=ftpd.ftp_home) as (testfile, testdata):
-        response = session.get('ftp://127.0.0.1:%d/%s' % (ftpd.ftp_port, testfile),
-                auth=(ftpd.ftp_user, ftpd.ftp_password))
+        response = session.get(
+            'ftp://127.0.0.1:%d/%s' % (ftpd.ftp_port, testfile),
+            auth=(ftpd.ftp_user, ftpd.ftp_password))
 
         assert response.status_code == requests.codes.ok
         assert response.headers['Content-Length'] == str(len(testdata))
