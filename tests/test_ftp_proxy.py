@@ -1,16 +1,17 @@
+# -*- encoding: utf-8 -*-
+
 # Requesting an FTP resource through a proxy will actually create a request
 # to a HTTP proxy, and the proxy server will handle the FTP parts. This is
 # considered OK for some reason.
 
 import pytest
 
-import threading
 import contextlib
-import tempfile
 import os
+import tempfile
+import threading
 
 import requests
-import requests_ftp
 
 from threadmgr import socketServer
 
@@ -54,8 +55,9 @@ def test_proxy_connection_refused(ftpd, session):
 
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.ConnectionError):
-            session.get('ftp://127.0.0.1:%d/' % ftpd.ftp_port,
-                    proxies={'ftp': 'localhost:%d' % port})
+            session.get(
+                'ftp://127.0.0.1:%d/' % ftpd.ftp_port,
+                proxies={'ftp': 'localhost:%d' % port})
 
 
 def test_proxy_read_timeout(ftpd, session):
@@ -72,8 +74,10 @@ def test_proxy_read_timeout(ftpd, session):
     event = threading.Event()
     with socketServer(target, event) as port:
         with pytest.raises(requests.exceptions.ReadTimeout):
-            session.get('ftp://127.0.0.1:%d' % ftpd.ftp_port,
-                    proxies={'ftp': 'localhost:%d' % port}, timeout=1)
+            session.get(
+                'ftp://127.0.0.1:%d' % ftpd.ftp_port,
+                proxies={'ftp': 'localhost:%d' % port},
+                timeout=1)
 
 
 def test_proxy_connection_close(ftpd, session):
@@ -86,5 +90,7 @@ def test_proxy_connection_close(ftpd, session):
 
     with socketServer(target) as port:
         with pytest.raises(requests.exceptions.ConnectionError):
-            session.get('ftp://127.0.0.1:%d/' % ftpd.ftp_port,
-                    proxies={'ftp': 'localhost:%d' % port}, timeout=1)
+            session.get(
+                'ftp://127.0.0.1:%d/' % ftpd.ftp_port,
+                proxies={'ftp': 'localhost:%d' % port},
+                timeout=1)

@@ -1,8 +1,10 @@
-import threading
+# -*- encoding: utf-8 -*-
 import contextlib
+import six
 import socket
 import sys
-import six
+import threading
+
 
 class TestThread(threading.Thread):
     """ A Thread class that save exceptions raised by the thread. """
@@ -16,6 +18,7 @@ class TestThread(threading.Thread):
             super(TestThread, self).run(*args, **kwargs)
         except:
             self._exnlist.append(sys.exc_info())
+
 
 @contextlib.contextmanager
 def socketServer(target, event=None):

@@ -1,18 +1,19 @@
 # -*- encoding: utf-8 -*-
-import requests
-import ftplib
 import base64
-from requests.compat import urlparse
-from requests.hooks import dispatch_hook
-from requests import Response, codes
-from io import BytesIO
 import cgi
+import ftplib
+from io import BytesIO
 import os
+import requests
 import socket
 
+from requests import Response, codes
+from requests.compat import urlparse
 from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from requests.exceptions import RequestException
+from requests.hooks import dispatch_hook
 from requests.utils import prepend_scheme_if_needed
+
 
 class FTPSession(requests.Session):
     def __init__(self):
@@ -133,13 +134,15 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         # Build a dictionary keyed off the methods we support in upper case.
         # The values of this dictionary should be the functions we use to
         # send the specific queries.
-        self.func_table = {'LIST': self.list,
-                           'RETR': self.retr,
-                           'STOR': self.stor,
-                           'NLST': self.nlst,
-                           'SIZE': self.size,
-                           'HEAD': self.head,
-                           'GET': self.get,}
+        self.func_table = {
+            'LIST': self.list,
+            'RETR': self.retr,
+            'STOR': self.stor,
+            'NLST': self.nlst,
+            'SIZE': self.size,
+            'HEAD': self.head,
+            'GET': self.get,
+        }
 
     def send(self, request, **kwargs):
         '''Sends a PreparedRequest object over FTP. Returns a response object.
@@ -197,11 +200,13 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             # non-ascii, who knows what the encoding is. Latin1 has the
             # advantage of not being able to fail.
             resp = build_text_response(request,
-                    BytesIO(str(e).encode('latin1')), str(codes.not_found))
+                                       BytesIO(str(e).encode('latin1')),
+                                       str(codes.not_found))
         # 4xx reply, translate to a http 503
         except ftplib.error_temp as e:
             resp = build_text_response(request,
-                    BytesIO(str(e).encode('latin1')), str(codes.unavailable))
+                                       BytesIO(str(e).encode('latin1')),
+                                       str(codes.unavailable))
         # error_reply is an unexpected status code, and error_proto is an
         # invalid status code. Error is the generic ftplib error, usually
         # raised when a line is too long. Translate all of them to a generic
