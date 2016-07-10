@@ -54,7 +54,7 @@ def monkeypatch_session():
 
 
 def parse_multipart_files(request):
-    '''Given a prepared reqest, return a file-like object containing the
+    '''Given a prepared request, return a file-like object containing the
     original data. This is pretty hacky.'''
     # Start by grabbing the pdict.
     _, pdict = cgi.parse_header(request.headers['Content-Type'])
@@ -223,7 +223,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         pass
 
     def send_proxy(self, request, proxy, **kwargs):
-        '''Send a FTP request through a HTTP proxy'''
+        '''Send an FTP request through a HTTP proxy'''
         # Direct the request through a HTTP adapter instead
         proxy_url = prepend_scheme_if_needed(proxy, 'http')
         s = requests.Session()
