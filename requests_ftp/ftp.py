@@ -6,6 +6,7 @@ from io import BytesIO
 import os
 import requests
 import socket
+import logging
 
 from requests import Response, codes
 from requests.compat import urlparse
@@ -14,6 +15,7 @@ from requests.exceptions import RequestException
 from requests.hooks import dispatch_hook
 from requests.utils import prepend_scheme_if_needed
 
+log = logging.getLogger(__name__)
 
 class FTPSession(requests.Session):
     def __init__(self):
@@ -100,7 +102,49 @@ def build_text_response(request, data, code):
 
 def build_binary_response(request, data, code):
     '''Build a response for data whose encoding is unknown.'''
-    return build_response(request, data, code,  None)
+    return build_response(request, data, code, None)
+
+
+def get_status_code_from_code_response(code):
+    '''
+    The idea is to handle complicated code response (even multi lines).
+    We get the status code in two ways:
+    - extracting the code from the last valid line in the response
+    - getting it from the 3 first digits in the code
+    After a comparison between the two values,
+    we can safely set the code or raise a warning.
+
+    Examples:
+        - get_status_code_from_code_response('200 Welcome') == 200
+
+        - multi_line_code = '226-File successfully transferred\n226 0.000 seconds'
+          get_status_code_from_code_response(multi_line_code) == 226
+
+        - multi_line_with_code_conflicts = '200-File successfully transferred\n226 0.000 seconds'
+          get_status_code_from_code_response(multi_line_with_code_conflicts) == 226
+
+    For more detail see RFC 959, page 36, on multi-line responses:
+        https://www.ietf.org/rfc/rfc959.txt
+
+        "Thus the format for multi-line replies is that the first line
+         will begin with the exact required reply code, followed
+         immediately by a Hyphen, "-" (also known as Minus), followed by
+         text.  The last line will begin with the same code, followed
+         immediately by Space <SP>, optionally some text, and the Telnet
+         end-of-line code."
+    '''
+    last_valid_line_from_code = [line for line in code.split('\n') if line][-1]
+    status_code_from_last_line = int(last_valid_line_from_code.split()[0])
+    status_code_from_first_digits = int(code[:3])
+    if status_code_from_last_line != status_code_from_first_digits:
+        log.warning(
+            'FTP response status code seems to be inconsistent.\n'
+            'Code received: %s, extracted: %s and %s',
+            code,
+            status_code_from_last_line,
+            status_code_from_first_digits
+        )
+    return status_code_from_last_line
 
 
 def build_response(request, data, code, encoding):
@@ -114,7 +158,8 @@ def build_response(request, data, code, encoding):
     response.raw = data
     response.url = request.url
     response.request = request
-    response.status_code = int(code.split()[0])
+    response.status_code = get_status_code_from_code_response(code)
+
     if hasattr(data, "content_len"):
         response.headers['Content-Length'] = str(data.content_len)
 

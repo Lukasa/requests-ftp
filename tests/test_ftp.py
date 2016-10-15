@@ -58,6 +58,14 @@ def test_authenticated_get(ftpd, session):
         assert response.content == testdata
 
 
+def test_basic_retr(ftpd, session):
+    # Fetch a file with the retr command
+    with _prepareTestData(dir=ftpd.anon_root) as (testfile, testdata):
+        response = session.retr("ftp://127.0.0.1:%d/%s" % (ftpd.ftp_port, testfile))
+
+        assert response.status_code == 226
+
+
 def test_head(ftpd, session):
     # Perform a HEAD over an anonymous connection
     with _prepareTestData(dir=ftpd.anon_root) as (testfile, testdata):
