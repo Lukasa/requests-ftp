@@ -15,6 +15,7 @@ from requests.exceptions import RequestException
 from requests.hooks import dispatch_hook
 from requests.utils import prepend_scheme_if_needed
 
+log = logging.getLogger(__name__)
 
 class FTPSession(requests.Session):
     def __init__(self):
@@ -136,10 +137,13 @@ def get_status_code_from_code_response(code):
     status_code_from_last_line = int(last_valid_line_from_code.split()[0])
     status_code_from_first_digits = int(code[:3])
     if status_code_from_last_line != status_code_from_first_digits:
-        logging.warning(
+        log.warning(
             'FTP response status code seems to be inconsistent.\n'
-            'Code received: {0}, extracted: {1} and {2}'.format(
-                code, status_code_from_last_line, status_code_from_first_digits))
+            'Code received: %s, extracted: %s and %s',
+            code,
+            status_code_from_last_line,
+            status_code_from_first_digits
+        )
     return status_code_from_last_line
 
 
