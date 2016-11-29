@@ -17,7 +17,9 @@ from requests.utils import prepend_scheme_if_needed
 
 log = logging.getLogger(__name__)
 
+
 class FTPSession(requests.Session):
+
     def __init__(self):
         super(FTPSession, self).__init__()
         self.mount('ftp://', FTPAdapter())
@@ -45,6 +47,10 @@ class FTPSession(requests.Session):
     def size(self, url, **kwargs):
         '''Sends an FTP SIZE. Returns a decimal number.'''
         return self.request('SIZE', url, **kwargs)
+
+    def mlsd(self, url, **kwargs):
+        '''Sends an FTP MLSD. Returns a Response object.'''
+        return self.request('MLSD', url, **kwargs)
 
 
 def monkeypatch_session():
@@ -173,6 +179,7 @@ def build_response(request, data, code, encoding):
 
 class FTPAdapter(requests.adapters.BaseAdapter):
     '''A Requests Transport Adapter that handles FTP urls.'''
+
     def __init__(self):
         super(FTPAdapter, self).__init__()
 
@@ -187,6 +194,7 @@ class FTPAdapter(requests.adapters.BaseAdapter):
             'SIZE': self.size,
             'HEAD': self.head,
             'GET': self.get,
+            'MLSD': self.mlsd,
         }
 
     def send(self, request, **kwargs):
@@ -299,6 +307,25 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
         return response
 
+    def mlsd(self, path, request):
+        '''Executes the FTP MLSD command on the given path.'''
+        data = BytesIO()
+
+        # To ensure the BytesIO gets cleaned up, we need to alias its close
+        # method. See self.list().
+        data.release_conn = data.close
+
+        self.conn.cwd(path)
+        code = self.conn.retrbinary('MLSD', data_callback_factory(data))
+
+        # When that call has finished executing, we'll have all our data.
+        response = build_text_response(request, data, code)
+
+        # Close the connection.
+        self.conn.close()
+
+        return response
+
     def retr(self, path, request):
         '''Executes the FTP RETR command on the given path.'''
         data = BytesIO()
@@ -307,7 +334,8 @@ class FTPAdapter(requests.adapters.BaseAdapter):
         # method. See self.list().
         data.release_conn = data.close
 
-        code = self.conn.retrbinary('RETR ' + path, data_callback_factory(data))
+        code = self.conn.retrbinary(
+            'RETR ' + path, data_callback_factory(data))
 
         response = build_binary_response(request, data, code)
 
@@ -332,7 +360,8 @@ class FTPAdapter(requests.adapters.BaseAdapter):
 
     def size(self, path, request):
         '''Executes the FTP SIZE command on the given path.'''
-        self.conn.voidcmd('TYPE I')  # SIZE is not usually allowed in ASCII mode
+        self.conn.voidcmd(
+            'TYPE I')  # SIZE is not usually allowed in ASCII mode
 
         size = self.conn.size(path)
 
