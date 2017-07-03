@@ -47,6 +47,34 @@ Does not provide:
 - SFTP. Security is for the weak.
 - Less common commands.
 
+Monkey Patching
+---------------
+
+Sometimes you may want to call a library that uses requests with an ftp URL.
+First, check whether the library takes a session parameter. If it does, you
+can use either the FTPSession or FTPAdapter class directly, which is the preferred
+approach:
+
+.. code-block:: pycon
+
+    >>> import requests_ftp
+    >>> import some_library
+    >>> s = requests.FTPSession()
+    >>> resp = some_library.get('ftp://127.0.0.1/', auth=('Lukasa', 'notmypass'), session=s)
+
+If they do not, either modify the library to add a session parameter, or as an absolute
+last resort, use the `monkeypatch_session` function:
+
+.. code-block:: pycon
+
+    >>> import requests_ftp
+    >>> requests_ftp.monkeypatch_session()
+    >>> import some_library
+    >>> resp = some_library.get('ftp://127.0.0.1/', auth=('Lukasa', 'notmypass'))
+
+If you expect your code to be used as a library, take particular care to avoid the
+`monkeypatch_session` option.
+
 Important Notes
 ---------------
 
