@@ -17,10 +17,8 @@ Here's how you use it:
 
 .. code-block:: pycon
 
-    >>> import requests
     >>> import requests_ftp
-    >>> requests_ftp.monkeypatch_session()
-    >>> s = requests.Session()
+    >>> s = requests.FTPSession()
     >>> resp = s.list('ftp://127.0.0.1/', auth=('Lukasa', 'notmypass'))
     >>> resp.status_code
     '226'
