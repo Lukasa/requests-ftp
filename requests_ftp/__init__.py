@@ -18,4 +18,4 @@ __author__ = 'Cory Benfield'
 __license__ = 'Apache 2.0'
 __copyright__ = 'Copyright 2012 Cory Benfield'
 
-from .ftp import FTPAdapter, monkeypatch_session
+from .ftp import FTPAdapter, FTPSession, monkeypatch_session
