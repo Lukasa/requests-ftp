@@ -18,7 +18,7 @@ Here's how you use it:
 .. code-block:: pycon
 
     >>> import requests_ftp
-    >>> s = requests.FTPSession()
+    >>> s = requests_ftp.FTPSession()
     >>> resp = s.list('ftp://127.0.0.1/', auth=('Lukasa', 'notmypass'))
     >>> resp.status_code
     '226'
@@ -59,7 +59,7 @@ approach:
 
     >>> import requests_ftp
     >>> import some_library
-    >>> s = requests.FTPSession()
+    >>> s = requests_ftp.FTPSession()
     >>> resp = some_library.get('ftp://127.0.0.1/', auth=('Lukasa', 'notmypass'), session=s)
 
 If they do not, either modify the library to add a session parameter, or as an absolute
